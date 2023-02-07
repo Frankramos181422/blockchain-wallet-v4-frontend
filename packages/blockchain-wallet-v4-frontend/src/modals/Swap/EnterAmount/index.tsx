@@ -8,6 +8,7 @@ import { CrossBorderLimitsPayload, ExtractSuccess, WalletAccountEnum } from '@co
 import { CoinAccountIcon, Icon, SpinningLoader, Text } from 'blockchain-info-components'
 import { FlyoutWrapper } from 'components/Flyout'
 import { actions, selectors } from 'data'
+import { convertBaseToStandard } from 'data/components/exchange/services'
 import { RootState } from 'data/rootReducer'
 import {
   Analytics,
@@ -162,13 +163,14 @@ class EnterAmount extends PureComponent<Props> {
                 <FormattedMessage id='copy.new_swap' defaultMessage='New Swap' />
               </Text>
             </SubTopText>
-            {this.props.quoteR.cata({
+            {this.props.quotePriceR.cata({
               Failure: () => null,
               Loading: () => <SpinningLoader borderWidth='4px' height='14px' width='14px' />,
               NotAsked: () => <SpinningLoader borderWidth='4px' height='14px' width='14px' />,
               Success: (val) => (
                 <Text size='14px' color='grey900' weight={500}>
-                  1 {baseCoinfig.displaySymbol} = {formatCoin(val.rate)}{' '}
+                  1 {baseCoinfig.displaySymbol} ={' '}
+                  {convertBaseToStandard(counterCoinfig.displaySymbol, val.price)}{' '}
                   {counterCoinfig.displaySymbol}
                 </Text>
               )
@@ -257,7 +259,7 @@ const mapStateToProps = (state: RootState) => {
     data: getData(state),
     initSwapFormValues: selectors.form.getFormValues('initSwap')(state) as InitSwapFormValuesType,
     isPristine: selectors.form.isPristine('swapAmount')(state),
-    quoteR: selectors.components.swap.getQuote(state)
+    quotePriceR: selectors.components.swap.getQuotePrice(state)
   }
 }
 

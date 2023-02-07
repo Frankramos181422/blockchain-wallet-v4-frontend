@@ -26,6 +26,8 @@ export const getPayment = (state: RootState) => state.components.swap.payment
 
 export const getQuote = (state: RootState) => state.components.swap.quote
 
+export const getQuotePrice = (state: RootState) => state.components.swap.quotePrice
+
 export const getFix = (state: RootState) => state.components.swap.fix
 
 export const getTradesStatus = (state: RootState) => state.components.swap.trades.status
@@ -64,7 +66,7 @@ export const getRates = (state: RootState) => {
 }
 
 export const getIncomingAmount = (state: RootState) => {
-  const quoteR = getQuote(state)
+  const quotePriceR = getQuotePrice(state)
   const initSwapFormValues = selectors.form.getFormValues('initSwap')(
     state
   ) as InitSwapFormValuesType
@@ -72,13 +74,13 @@ export const getIncomingAmount = (state: RootState) => {
     state
   ) as SwapAmountFormValues
   const amount = swapAmountFormValues?.cryptoAmount || 0
-  const fromCoin = initSwapFormValues?.BASE?.coin || 'BTC'
   const toCoin = initSwapFormValues?.COUNTER?.coin || 'BTC'
 
-  return lift(({ quote }: ExtractSuccess<typeof quoteR>) => {
-    const amtMinor = convertStandardToBase(fromCoin, amount)
-    const exRate = new BigNumber(getRate(quote.quote.priceTiers, toCoin, new BigNumber(amtMinor)))
-    const feeMajor = convertBaseToStandard(toCoin, quote.networkFee)
+  // TODO we might need to show here resultAmount
+
+  return lift((quotePrice: ExtractSuccess<typeof quotePriceR>) => {
+    const exRate = new BigNumber(convertBaseToStandard(toCoin, quotePrice.price))
+    const feeMajor = convertBaseToStandard(toCoin, quotePrice.networkFee)
 
     const amt = exRate.times(amount).minus(feeMajor)
     const isNegative = amt.isLessThanOrEqualTo(0)
@@ -87,7 +89,7 @@ export const getIncomingAmount = (state: RootState) => {
       amt: isNegative ? 0 : amt,
       isNegative
     }
-  })(quoteR)
+  })(quotePriceR)
 }
 
 export const getCoins = () =>

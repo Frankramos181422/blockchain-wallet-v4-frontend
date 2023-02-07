@@ -3,7 +3,9 @@ import {
   CrossBorderLimits,
   PaymentValue,
   RemoteDataType,
+  SwapNewQuoteStateType,
   SwapOrderType,
+  SwapQuotePriceType,
   SwapQuoteStateType,
   SwapUserLimitsType
 } from '@core/types'
@@ -60,7 +62,8 @@ export type SwapState = {
   order?: SwapOrderType
   pairs: RemoteDataType<string, Array<string>>
   payment: RemoteDataType<string, undefined | PaymentValue>
-  quote: RemoteDataType<string, SwapQuoteStateType>
+  quote: RemoteDataType<string, SwapNewQuoteStateType>
+  quotePrice: RemoteDataType<string, SwapQuotePriceType>
   side: SwapSideType
   step: keyof typeof SwapStepType
   trades: {

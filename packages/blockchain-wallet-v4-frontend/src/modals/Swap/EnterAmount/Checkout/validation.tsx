@@ -1,7 +1,7 @@
 import BigNumber from 'bignumber.js'
 
 import { Exchange } from '@core'
-import { PaymentValue, RatesType, SwapQuoteStateType, SwapUserLimitsType } from '@core/types'
+import { PaymentValue, RatesType, SwapQuotePriceType, SwapUserLimitsType } from '@core/types'
 import { convertBaseToStandard, convertStandardToBase } from 'data/components/exchange/services'
 import { BSCheckoutFormValuesType, SwapAccountType, SwapAmountFormValues } from 'data/types'
 import { CRYPTO_DECIMALS } from 'services/forms'
@@ -13,7 +13,7 @@ export const getMaxMin = (
   limits: SwapUserLimitsType,
   baseRate: RatesType,
   payment: undefined | PaymentValue,
-  quote: SwapQuoteStateType,
+  quotePrice: SwapQuotePriceType,
   BASE: SwapAccountType,
   COUNTER: SwapAccountType
 ) => {
@@ -48,9 +48,9 @@ export const getMaxMin = (
 
       // calculate the BTC -> ETH rate
       // 1 BTC = 39.12444194 ETH
-      const exRate = new BigNumber(1).dividedBy(quote.rate)
+      const exRate = new BigNumber(1).dividedBy(quotePrice?.price || 1)
       // BTC fee is 0.0004517 BTC a.k.a 4517 satoshi
-      const standardCounterFee = convertBaseToStandard(COUNTER.coin, quote.quote.networkFee)
+      const standardCounterFee = convertBaseToStandard(COUNTER.coin, quotePrice?.networkFee || 0)
       // 4517 satoshi is 0.017672510 ETH is 7 USD (AOTW)
       const counterFeeInBase = exRate.times(standardCounterFee).toNumber()
 

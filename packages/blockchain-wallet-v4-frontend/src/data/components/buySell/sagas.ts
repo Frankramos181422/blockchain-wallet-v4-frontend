@@ -21,6 +21,7 @@ import {
   OrderConfirmAttributesType,
   OrderType,
   ProductTypes,
+  QuoteProfileName,
   SwapOrderType,
   WalletOptionsType
 } from '@core/types'
@@ -1297,7 +1298,7 @@ export default ({ api, coreSagas, networks }: { api: APIType; coreSagas: any; ne
         const quote: ReturnType<typeof api.getBuyQuote> = yield call(
           api.getBuyQuote,
           pairReversed,
-          'SIMPLEBUY',
+          QuoteProfileName.SIMPLEBUY,
           amount,
           paymentMethod,
           paymentMethodId
@@ -1356,8 +1357,8 @@ export default ({ api, coreSagas, networks }: { api: APIType; coreSagas: any; ne
       try {
         const { pair } = payload
         const direction = getDirection(payload.account)
-        const quote: ReturnType<typeof api.getSwapQuote> = yield call(
-          api.getSwapQuote,
+        const quote: ReturnType<typeof api.getSwapQuote_DEPRECATED> = yield call(
+          api.getSwapQuote_DEPRECATED,
           pair,
           direction
         )

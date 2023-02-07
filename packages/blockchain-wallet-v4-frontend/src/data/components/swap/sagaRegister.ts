@@ -33,11 +33,31 @@ export default ({ api, coreSagas, networks }) => {
     yield takeLatest(actions.fetchCrossBorderLimits.type, swapSagas.fetchCrossBorderLimits)
     yield takeEvery(actions.setStep.type, trackAccountsSelected)
 
-    yield takeLatest(actions.startPollQuote.type, function* () {
-      if (pollTask && pollTask.isRunning()) yield cancel(pollTask)
-      pollTask = yield fork(swapSagas.fetchQuote)
-      yield take(actions.stopPollQuote)
-      yield cancel(pollTask)
-    })
+    // yield takeLatest(actions.startPollQuote.type, function* () {
+    //   if (pollTask && pollTask.isRunning()) yield cancel(pollTask)
+    //   pollTask = yield fork(swapSagas.fetchQuote)
+    //   yield take(actions.stopPollQuote)
+    //   yield cancel(pollTask)
+    // })
+
+    yield takeLatest(
+      actions.startPollQuotePrice.type,
+      function* (payload: ReturnType<typeof actions.startPollQuotePrice>) {
+        if (pollTask && pollTask.isRunning()) yield cancel(pollTask)
+        pollTask = yield fork(swapSagas.fetchQuotePrice, payload)
+        yield take(actions.stopPollQuotePrice)
+        yield cancel(pollTask)
+      }
+    )
+
+    yield takeLatest(
+      actions.startPollQuote.type,
+      function* (payload: ReturnType<typeof actions.startPollQuote>) {
+        if (pollTask && pollTask.isRunning()) yield cancel(pollTask)
+        pollTask = yield fork(swapSagas.fetchQuote, payload)
+        yield take(actions.stopPollQuote)
+        yield cancel(pollTask)
+      }
+    )
   }
 }

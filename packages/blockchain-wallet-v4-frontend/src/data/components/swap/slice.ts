@@ -7,8 +7,9 @@ import {
   CrossBorderLimits,
   CrossBorderLimitsPayload,
   PaymentValue,
+  SwapNewQuoteStateType,
   SwapOrderType,
-  SwapQuoteStateType,
+  SwapQuotePriceType,
   SwapUserLimitsType
 } from '@core/types'
 import { ModalOriginType } from 'data/modals/types'
@@ -24,6 +25,7 @@ const initialState: SwapState = {
   pairs: Remote.NotAsked,
   payment: Remote.NotAsked,
   quote: Remote.NotAsked,
+  quotePrice: Remote.NotAsked,
   side: 'BASE',
   step: 'INIT_SWAP',
   trades: {
@@ -97,9 +99,21 @@ const swapSlice = createSlice({
     fetchQuoteLoading: (state) => {
       state.quote = Remote.Loading
     },
-    fetchQuoteSuccess: (state, action: PayloadAction<SwapQuoteStateType>) => {
+    fetchQuotePrice: () => {},
+
+    fetchQuotePriceFailure: (state, action: PayloadAction<string>) => {
+      state.quotePrice = Remote.Failure(action.payload)
+    },
+    fetchQuotePriceLoading: (state) => {
+      state.quotePrice = Remote.Loading
+    },
+    fetchQuotePriceSuccess: (state, action: PayloadAction<SwapQuotePriceType>) => {
+      state.quotePrice = Remote.Success(action.payload)
+    },
+    fetchQuoteSuccess: (state, action: PayloadAction<SwapNewQuoteStateType>) => {
       state.quote = Remote.Success(action.payload)
     },
+
     fetchTrades: () => {},
     fetchTradesFailure: (state, action: PayloadAction<string>) => {
       state.trades = {
@@ -152,8 +166,23 @@ const swapSlice = createSlice({
         origin: ModalOriginType
       }>
     ) => {},
-    startPollQuote: () => {},
+    startPollQuote: (
+      state,
+      action: PayloadAction<{
+        amount: string
+        pair: string
+        paymentMethod: string
+        paymentMethodId?: string
+      }>
+    ) => {},
+    startPollQuotePrice: (
+      state,
+      action: PayloadAction<{
+        amount?: string
+      }>
+    ) => {},
     stopPollQuote: () => {},
+    stopPollQuotePrice: () => {},
     switchFix: (state, action: PayloadAction<{ amount: string; fix: SwapCheckoutFixType }>) => {},
     toggleBaseAndCounter: () => {},
 

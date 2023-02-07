@@ -4,12 +4,21 @@ import { call, delay, put, race, select, take } from 'redux-saga/effects'
 
 import { Exchange } from '@core'
 import { APIType } from '@core/network/api'
-import { CoinType, PaymentType, PaymentValue, Product, SwapQuoteType } from '@core/types'
+import {
+  BSPaymentTypes,
+  CoinType,
+  PaymentType,
+  PaymentValue,
+  Product,
+  QuoteProfileName,
+  SwapQuoteType
+} from '@core/types'
 import { errorHandler } from '@core/utils'
 import { actions, selectors } from 'data'
 import { SWAP_ACCOUNTS_SELECTOR } from 'data/coins/model/swap'
 import { getCoinAccounts } from 'data/coins/selectors'
 import { generateProvisionalPaymentAmount } from 'data/coins/utils'
+import { convertBaseToStandard, convertStandardToBase } from 'data/components/exchange/services'
 import {
   CustodialSanctionsEnum,
   ModalName,
@@ -20,7 +29,6 @@ import { isNabuError } from 'services/errors'
 
 import { actions as custodialActions } from '../../custodial/slice'
 import profileSagas from '../../modules/profile/sagas'
-import { convertStandardToBase } from '../exchange/services'
 import sendSagas from '../send/sagas'
 import { selectReceiveAddress } from '../utils/sagas'
 import { FALLBACK_DELAY } from './model'
@@ -33,7 +41,7 @@ import {
   SwapAmountFormValues,
   SwapBaseCounterTypes
 } from './types'
-import { getDirection, getPair, getRate, NO_QUOTE } from './utils'
+import { getDirection, getPair, NO_QUOTE } from './utils'
 
 export default ({ api, coreSagas, networks }: { api: APIType; coreSagas; networks }) => {
   const { buildAndPublishPayment, paymentGetOrElse } = sendSagas({
@@ -147,8 +155,11 @@ export default ({ api, coreSagas, networks }: { api: APIType; coreSagas; network
       const paymentAmount = generateProvisionalPaymentAmount(coin, amount)
       payment = yield payment.amount(paymentAmount)
       // TODO, add isMemoBased check
-      const sampleAddr = quote.sampleDepositAddress.split(':')[0]
-      return (yield payment.chain().to(sampleAddr, 'ADDRESS').build().done()).value()
+      if (quote.sampleDepositAddress) {
+        const sampleAddr = quote.sampleDepositAddress.split(':')[0]
+        return (yield payment.chain().to(sampleAddr, 'ADDRESS').build().done()).value()
+      }
+      return { coin: source.coin, effectiveBalance: 0 }
     } catch (e) {
       // eslint-disable-next-line
       console.log(e)
@@ -161,6 +172,7 @@ export default ({ api, coreSagas, networks }: { api: APIType; coreSagas; network
     let toChain = false
 
     try {
+      console.log('create order now')
       yield put(actions.form.startSubmit('previewSwap'))
       const initSwapFormValues = selectors.form.getFormValues('initSwap')(
         yield select()
@@ -195,7 +207,7 @@ export default ({ api, coreSagas, networks }: { api: APIType; coreSagas; network
       const order: ReturnType<typeof api.createSwapOrder> = yield call(
         api.createSwapOrder,
         direction,
-        quote.quote.id,
+        quote.quote.quoteId,
         amount,
         ccy,
         destinationAddr,
@@ -210,7 +222,7 @@ export default ({ api, coreSagas, networks }: { api: APIType; coreSagas; network
             .getOrElse(null)
           if (typeof hotWalletAddress !== 'string') {
             console.error(
-              'Unable to retreive hotwallet address; falling back to deposit and sweep.'
+              'Unable to retrieve HotWallet address; falling back to deposit and sweep.'
             )
             yield call(buildAndPublishPayment, payment.coin, payment, order.kind.depositAddress)
           } else {
@@ -290,25 +302,11 @@ export default ({ api, coreSagas, networks }: { api: APIType; coreSagas; network
     }
   }
 
-  // 👋
-  // Eventually there won't be much difference between a swap, buy, or sell.
-  // We have 2 different directories (swap/buySell) of sagas/actions/types
-  // but on the BE there won't be any difference, just on the FE (if product)
-  // decides to keep things that way. In my opinion there is no difference
-  // but for now I'm copying a lot of the code from here and putting it in
-  // buySell.
-  //
-  // As of this writing, buySell only fetches one quote and doesn't need
-  // to worry about expiration, but since we're now using swap 2.0 for sell
-  // (and eventually buy) we'll need to worry about expiration and polling.
-  //
-  // We can't just call the swap fetchQuote function from buySell, because
-  // setting the swap quote loading will set the buy/sell quote loading,
-  // which we might not want. This is a case of breakdown between product/design/development.
-
-  const fetchQuote = function* () {
+  const fetchQuote = function* ({ payload }: ReturnType<typeof A.startPollQuote>) {
     while (true) {
       try {
+        console.log('payload', payload)
+        const { amount } = payload
         yield put(A.fetchQuoteLoading())
         const initSwapFormValues = selectors.form.getFormValues('initSwap')(
           yield select()
@@ -320,25 +318,93 @@ export default ({ api, coreSagas, networks }: { api: APIType; coreSagas; network
         const { BASE, COUNTER } = initSwapFormValues
 
         const pair = getPair(BASE, COUNTER)
-        const direction = getDirection(BASE, COUNTER)
+
         const quote: ReturnType<typeof api.getSwapQuote> = yield call(
           api.getSwapQuote,
           pair,
-          direction
+          QuoteProfileName.SWAP_INTERNAL,
+          amount, // fake
+          BSPaymentTypes.FUNDS
         )
-        const rate = getRate(
-          quote.quote.priceTiers,
-          COUNTER.coin,
-          new BigNumber(convertStandardToBase(BASE.coin, 1))
+        console.log('newQuote', quote)
+
+        yield put(
+          A.fetchQuoteSuccess({
+            quote,
+            rate: new BigNumber(convertBaseToStandard(COUNTER.coin, quote.price)).toNumber()
+          })
         )
-        yield put(A.fetchQuoteSuccess({ quote, rate }))
-        const refresh = Math.abs(differenceInMilliseconds(new Date(), new Date(quote.expiresAt)))
+        const refresh = Math.abs(
+          differenceInMilliseconds(new Date(), new Date(quote.quoteExpiresAt))
+        )
         yield delay(refresh)
       } catch (e) {
         const error = errorHandler(e)
+        if (isNabuError(e)) {
+          yield put(A.fetchQuoteFailure(error))
+
+          yield put(A.stopPollQuote())
+
+          return
+        }
+
         yield put(A.fetchQuoteFailure(error))
+        // stop fetching new quote until user does retry action
+        yield put(A.stopPollQuote())
+      }
+    }
+  }
+
+  const fetchQuotePrice = function* ({ payload }: ReturnType<typeof A.startPollQuotePrice>) {
+    while (true) {
+      try {
+        const { amount = '0' } = payload
+        yield put(A.fetchQuotePriceLoading())
+        const initSwapFormValues = selectors.form.getFormValues('initSwap')(
+          yield select()
+        ) as InitSwapFormValuesType
+        if (!initSwapFormValues || !initSwapFormValues.BASE || !initSwapFormValues.COUNTER) {
+          return yield put(A.setStep({ step: 'INIT_SWAP' }))
+        }
+
+        const { BASE, COUNTER } = initSwapFormValues
+
+        const pair = getPair(BASE, COUNTER)
+
+        const quotePrice: ReturnType<typeof api.getSwapQuotePrice> = yield call(
+          api.getSwapQuotePrice,
+          pair,
+          amount,
+          BSPaymentTypes.FUNDS,
+          QuoteProfileName.SIMPLEBUY
+        )
+        console.log('newQuote', quotePrice)
+
+        yield put(A.fetchQuotePriceSuccess(quotePrice))
+
+        // yield put(
+        //   A.fetchQuotePriceSuccess({
+        //     quote,
+        //     rate: new BigNumber(convertBaseToStandard(COUNTER.coin, quote.price)).toNumber()
+        //   })
+        // )
+        // const refresh = Math.abs(
+        //   differenceInMilliseconds(new Date(), new Date(quote.quoteExpiresAt))
+        // )
         yield delay(FALLBACK_DELAY)
-        yield put(A.startPollQuote())
+      } catch (e) {
+        const error = errorHandler(e)
+        if (isNabuError(e)) {
+          yield put(A.fetchQuoteFailure(error))
+
+          yield put(A.stopPollQuote())
+
+          return
+        }
+
+        yield put(A.fetchQuoteFailure(error))
+        // stop fetching new quote until user does retry action
+        yield put(A.stopPollQuote())
       }
     }
   }
@@ -371,6 +437,8 @@ export default ({ api, coreSagas, networks }: { api: APIType; coreSagas; network
       .getRatesSelector(BASE.coin, yield select())
       .getOrFail('Failed to get rates')
 
+    console.log('form has been changed', action.meta.field)
+
     const amountFieldValue =
       fix === 'CRYPTO'
         ? action.payload
@@ -382,11 +450,18 @@ export default ({ api, coreSagas, networks }: { api: APIType; coreSagas; network
           })
     yield put(actions.form.change('swapAmount', 'cryptoAmount', amountFieldValue))
 
-    if (BASE.type === SwapBaseCounterTypes.CUSTODIAL) return
-
     const swapAmountValues = selectors.form.getFormValues('swapAmount')(
       yield select()
     ) as SwapAmountFormValues
+
+    if (action.meta.field === 'amount') {
+      yield put(A.stopPollQuotePrice())
+
+      yield put(A.startPollQuotePrice({ amount: swapAmountValues?.amount }))
+    }
+
+    if (BASE.type === SwapBaseCounterTypes.CUSTODIAL) return
+
     // @ts-ignore
     let payment = paymentGetOrElse(BASE.coin, paymentR)
 
@@ -404,9 +479,9 @@ export default ({ api, coreSagas, networks }: { api: APIType; coreSagas; network
   }
 
   const initAmountForm = function* () {
-    let payment: PaymentValue
+    // let payment: PaymentValue
     try {
-      yield put(A.startPollQuote())
+      yield put(A.startPollQuotePrice({}))
       yield put(A.fetchLimits())
       yield put(A.updatePaymentLoading())
       const initSwapFormValues = selectors.form.getFormValues('initSwap')(
@@ -416,25 +491,28 @@ export default ({ api, coreSagas, networks }: { api: APIType; coreSagas; network
         return yield put(A.setStep({ step: 'INIT_SWAP' }))
       }
 
-      const swapAmountFormValues = selectors.form.getFormValues('swapAmount')(
-        yield select()
-      ) as SwapAmountFormValues
+      // const swapAmountFormValues = selectors.form.getFormValues('swapAmount')(
+      //   yield select()
+      // ) as SwapAmountFormValues
 
       yield race({
-        failure: take(A.fetchQuoteFailure.type),
-        success: take(A.fetchQuoteSuccess.type)
+        failure: take(A.fetchQuotePriceFailure.type),
+        success: take(A.fetchQuotePriceSuccess.type)
       })
-      const quote = S.getQuote(yield select()).getOrFail(NO_QUOTE)
+
+      // const quote = S.getQuote(yield select()).getOrFail(NO_QUOTE)
 
       const { BASE } = initSwapFormValues
       if (BASE.type === SwapBaseCounterTypes.ACCOUNT) {
-        payment = yield call(
-          calculateProvisionalPayment,
-          BASE,
-          quote.quote,
-          swapAmountFormValues?.cryptoAmount || 0
-        )
-        yield put(A.updatePaymentSuccess(payment))
+        // TODO figure out how this one should works
+        // payment = yield call(
+        //   calculateProvisionalPayment,
+        //   BASE,
+        //   quote.quote,
+        //   swapAmountFormValues?.cryptoAmount || 0
+        // )
+        // yield put(A.updatePaymentSuccess(payment))
+        yield put(A.updatePaymentSuccess(undefined))
       } else {
         yield put(A.updatePaymentSuccess(undefined))
       }
@@ -565,7 +643,8 @@ export default ({ api, coreSagas, networks }: { api: APIType; coreSagas; network
     yield put(actions.form.clearFields('swapAmount', false, false, 'amount'))
     yield put(actions.form.change('swapAmount', 'cryptoAmount', 0))
 
-    yield put(A.initAmountForm())
+    console.log(' do not call init amount')
+    // yield put(A.initAmountForm())
   }
 
   const handleSwapMaxAmountClick = function* ({
@@ -616,6 +695,7 @@ export default ({ api, coreSagas, networks }: { api: APIType; coreSagas; network
     fetchLimits,
     fetchPairs,
     fetchQuote,
+    fetchQuotePrice,
     fetchTrades,
     formChanged,
     handleSwapMaxAmountClick,

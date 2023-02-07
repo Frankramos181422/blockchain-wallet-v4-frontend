@@ -1,9 +1,12 @@
-import { CoinType, FiatType } from '@core/types'
+import { BSPaymentTypes, CoinType, FiatType } from '@core/types'
 
 import {
+  QuoteProfileName,
+  SwapNewQuoteType,
   SwapOrderDirectionType,
   SwapOrderStateType,
   SwapOrderType,
+  SwapQuotePriceType,
   SwapQuoteType,
   SwapUserLimitsType
 } from './types'
@@ -59,7 +62,7 @@ export default ({ authorizedGet, authorizedPost, nabuUrl }) => {
       url: nabuUrl
     })
 
-  const getSwapQuote = (
+  const getSwapQuote_DEPRECATED = (
     pair: string,
     direction: SwapOrderDirectionType,
     product = 'BROKERAGE'
@@ -124,12 +127,52 @@ export default ({ authorizedGet, authorizedPost, nabuUrl }) => {
       url: nabuUrl
     })
 
+  const getSwapQuotePrice = (
+    pair: string,
+    amount: string,
+    paymentMethod: BSPaymentTypes,
+    orderProfileName: QuoteProfileName
+  ): SwapQuotePriceType =>
+    authorizedGet({
+      contentType: 'application/json',
+      data: {
+        amount,
+        currencyPair: pair,
+        orderProfileName,
+        paymentMethod
+      },
+      endPoint: `/brokerage/quote/price`,
+      url: nabuUrl
+    })
+
+  const getSwapQuote = (
+    pair: string,
+    profile: QuoteProfileName,
+    inputValue: string,
+    paymentMethod: BSPaymentTypes,
+    paymentMethodId?: string
+  ): SwapNewQuoteType =>
+    authorizedPost({
+      contentType: 'application/json',
+      data: {
+        inputValue,
+        pair,
+        paymentMethod,
+        paymentMethodId,
+        profile
+      },
+      endPoint: '/brokerage/quote',
+      url: nabuUrl
+    })
+
   return {
     cancelSwapOrder,
     createSwapOrder,
     getSwapLimits,
     getSwapPairs,
     getSwapQuote,
+    getSwapQuotePrice,
+    getSwapQuote_DEPRECATED,
     getSwapTrades,
     getUnifiedSwapTrades,
     updateSwapOrder

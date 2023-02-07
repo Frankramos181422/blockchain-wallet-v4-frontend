@@ -6,7 +6,13 @@ import styled from 'styled-components'
 
 import { convertCoinToFiat } from '@core/exchange'
 import { coinToString } from '@core/exchange/utils'
-import { FiatType, PaymentValue, RatesType, RemoteDataType, SwapQuoteStateType } from '@core/types'
+import {
+  FiatType,
+  PaymentValue,
+  RatesType,
+  RemoteDataType,
+  SwapNewQuoteStateType
+} from '@core/types'
 import { Icon, Link, SkeletonRectangle, Text, TextGroup } from 'blockchain-info-components'
 import FiatDisplay from 'components/Display/FiatDisplay'
 import { Row, Title, Value } from 'components/Flyout'
@@ -297,7 +303,7 @@ const mapStateToProps = (state: RootState, ownProps: OwnProps) => ({
     .getRatesSelector(ownProps.counter.coin, state)
     .getOrElse({} as RatesType),
   paymentR: selectors.components.swap.getPayment(state).getOrElse({} as PaymentValue),
-  quoteR: selectors.components.swap.getQuote(state).getOrElse({} as SwapQuoteStateType),
+  quoteR: selectors.components.swap.getQuote(state).getOrElse({} as SwapNewQuoteStateType),
   walletCurrency: selectors.core.settings.getCurrency(state).getOrElse('USD') as FiatType
 })
 
@@ -311,7 +317,7 @@ interface OwnProps {
   base: SwapAccountType
   basePayment: RemoteDataType<string, PaymentValue | undefined>
   counter: SwapAccountType
-  counterQuote: RemoteDataType<string, SwapQuoteStateType>
+  counterQuote: RemoteDataType<string, SwapNewQuoteStateType>
 }
 type Props = OwnProps & ConnectedProps<typeof connector>
 

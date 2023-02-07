@@ -205,3 +205,7 @@ export const getShowEarnAvailableAssets = (state: RootState) =>
 // show prove flow
 export const getShowProveFlow = (state: RootState) =>
   getWebOptions(state).map(path(['featureFlags', 'showProveFlow']))
+
+// use new swap/sell quotes
+export const getUseNewSwapSellQuotes = (state: RootState) =>
+  getWebOptions(state).map(path(['featureFlags', 'useNewSwapSellQuotes']))

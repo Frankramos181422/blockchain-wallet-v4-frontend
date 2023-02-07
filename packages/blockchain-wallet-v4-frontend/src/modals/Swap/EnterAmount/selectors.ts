@@ -16,7 +16,7 @@ const getData = (state: RootState) => {
   const incomingAmountR = selectors.components.swap.getIncomingAmount(state)
   const limitsR = selectors.components.swap.getLimits(state)
   const paymentR = selectors.components.swap.getPayment(state)
-  const quoteR = selectors.components.swap.getQuote(state)
+  const quotePriceR = selectors.components.swap.getQuotePrice(state)
   const baseRatesR = selectors.core.data.misc.getRatesSelector(
     initSwapFormValues?.BASE?.coin || 'BTC',
     state
@@ -31,7 +31,7 @@ const getData = (state: RootState) => {
     (
       incomingAmount: ExtractSuccess<typeof incomingAmountR>,
       limits: ExtractSuccess<typeof limitsR>,
-      quote: ExtractSuccess<typeof quoteR>,
+      quotePrice: ExtractSuccess<typeof quotePriceR>,
       baseRates: ExtractSuccess<typeof baseRatesR>,
       walletCurrency: FiatType
     ) => ({
@@ -43,10 +43,10 @@ const getData = (state: RootState) => {
       incomingAmount,
       limits,
       payment: paymentR.getOrElse(undefined),
-      quote,
+      quotePrice,
       walletCurrency
     })
-  )(incomingAmountR, limitsR, quoteR, baseRatesR, walletCurrencyR)
+  )(incomingAmountR, limitsR, quotePriceR, baseRatesR, walletCurrencyR)
 }
 
 export default getData

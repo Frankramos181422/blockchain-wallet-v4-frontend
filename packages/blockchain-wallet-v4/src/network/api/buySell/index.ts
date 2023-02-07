@@ -16,7 +16,7 @@ import {
   WalletCurrencyType
 } from '../../../types'
 import { NabuCustodialProductType, ProductTypes, WithdrawResponseType } from '../custodial/types'
-import { SwapUserLimitsType } from '../swap/types'
+import { QuoteProfileName, SwapUserLimitsType } from '../swap/types'
 import {
   ApplePayInfoType,
   BSAccountType,
@@ -389,7 +389,7 @@ export default ({ authorizedDelete, authorizedGet, authorizedPost, authorizedPut
 
   const getBuyQuote = (
     pair: string,
-    profile: 'SIMPLEBUY' | 'SIMPLETRADE' | 'SWAP_FROM_USERKEY' | 'SWAP_INTERNAL' | 'SWAP_ON_CHAIN',
+    profile: QuoteProfileName,
     inputValue: string,
     paymentMethod: BSPaymentTypes,
     paymentMethodId?: string
