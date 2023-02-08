@@ -3,10 +3,12 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 
 import Remote from '@core/remote'
 import {
+  BSPaymentTypes,
   CoinType,
   CrossBorderLimits,
   CrossBorderLimitsPayload,
   PaymentValue,
+  QuoteProfileName,
   SwapNewQuoteStateType,
   SwapOrderType,
   SwapQuotePriceType,
@@ -14,7 +16,13 @@ import {
 } from '@core/types'
 import { ModalOriginType } from 'data/modals/types'
 
-import { SwapAccountType, SwapCheckoutFixType, SwapState, SwapStepPayload } from './types'
+import {
+  SwapAccountType,
+  SwapBaseCounterTypes,
+  SwapCheckoutFixType,
+  SwapState,
+  SwapStepPayload
+} from './types'
 
 const initialState: SwapState = {
   crossBorderLimits: Remote.NotAsked,
@@ -93,7 +101,7 @@ const swapSlice = createSlice({
     },
 
     fetchQuote: () => {},
-    fetchQuoteFailure: (state, action: PayloadAction<string>) => {
+    fetchQuoteFailure: (state, action: PayloadAction<string | Error>) => {
       state.quote = Remote.Failure(action.payload)
     },
     fetchQuoteLoading: (state) => {
@@ -137,6 +145,15 @@ const swapSlice = createSlice({
     handleSwapMaxAmountClick: (state, action: PayloadAction<{ amount: string | undefined }>) => {},
     handleSwapMinAmountClick: (state, action: PayloadAction<{ amount: string | undefined }>) => {},
     initAmountForm: () => {},
+
+    proceedToSwapConfirmation: (
+      state,
+      action: PayloadAction<{
+        amount: string
+        base: SwapAccountType
+        counter: SwapAccountType
+      }>
+    ) => {},
     refreshAccounts: () => {},
     setCheckoutFix: (state, action: PayloadAction<SwapCheckoutFixType>) => {
       state.fix = action.payload
@@ -170,9 +187,10 @@ const swapSlice = createSlice({
       state,
       action: PayloadAction<{
         amount: string
+        counter: SwapAccountType
         pair: string
-        paymentMethod: string
-        paymentMethodId?: string
+        paymentMethod: BSPaymentTypes
+        profile: QuoteProfileName
       }>
     ) => {},
     startPollQuotePrice: (

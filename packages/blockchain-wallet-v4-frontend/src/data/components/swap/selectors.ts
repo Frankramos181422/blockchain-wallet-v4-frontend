@@ -5,9 +5,8 @@ import { ExtractSuccess } from '@core/types'
 import { selectors } from 'data'
 import { RootState } from 'data/rootReducer'
 
-import { convertBaseToStandard, convertStandardToBase } from '../exchange/services'
+import { convertBaseToStandard } from '../exchange/services'
 import { InitSwapFormValuesType, SwapAmountFormValues } from './types'
-import { getRate } from './utils'
 
 export const getCustodialEligibility = (state: RootState) =>
   state.components.swap.custodialEligibility

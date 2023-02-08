@@ -21,7 +21,7 @@ const isMobilePayment = (
 /**
  * @throws
  */
-const initialiseMobilePayment = function* ({
+const initializeMobilePayment = function* ({
   mobilePaymentMethod,
   pair
 }: {
@@ -87,7 +87,7 @@ export const proceedToBuyConfirmation = function* ({
     }
 
     if (isMobilePayment(mobilePaymentMethod)) {
-      const mobilePaymentInfo = yield* initialiseMobilePayment({
+      const mobilePaymentInfo = yield* initializeMobilePayment({
         mobilePaymentMethod,
         pair: pairObject
       })

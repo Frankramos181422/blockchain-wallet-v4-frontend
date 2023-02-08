@@ -15,7 +15,7 @@ export type SwapOrderType = {
     withdrawalAddress: string
     withdrawalTxHash: string
   }
-  pair: string
+  pair: PairType
   priceFunnel: {
     indicativePrice?: string
     inputMoney: string
@@ -40,6 +40,8 @@ export type SwapOrderType = {
 export type ProcessedSwapOrderType = SwapOrderType & {
   insertedAt: string
 }
+
+export type PairType = string
 
 export type SwapOrderDirectionType = 'INTERNAL' | 'ON_CHAIN' | 'FROM_USERKEY' | 'TO_USERKEY'
 
@@ -83,7 +85,7 @@ export type SwapQuoteType = {
   expiresAt: string
   id: string
   networkFee: string
-  pair: string
+  pair: PairType
   product: string
   quote: {
     currencyPair: string
@@ -111,7 +113,7 @@ export enum QuoteProfileName {
 
 export type SwapQuotePriceType = {
   amount: string
-  currencyPair: string
+  currencyPair: PairType
   dynamicFee: string // USD
   networkFee: null
   orderProfileName: QuoteProfileName

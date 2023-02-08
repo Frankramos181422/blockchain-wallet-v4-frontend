@@ -128,8 +128,6 @@ const Checkout: React.FC<InjectedFormProps<{}, Props> & Props> = (props) => {
     walletCurrency
   } = props
 
-  console.log('quotePrice ==== ', quotePrice)
-
   const [fontRatio, setRatio] = useState(1)
   const amountError = typeof formErrors.amount === 'string' && formErrors.amount
 
@@ -206,14 +204,10 @@ const Checkout: React.FC<InjectedFormProps<{}, Props> & Props> = (props) => {
   const handleSubmit = (e) => {
     e.preventDefault()
 
-    props.swapActions.setStep({
-      options: {
-        baseAccountType: BASE.type,
-        baseCoin: BASE.coin,
-        counterAccountType: COUNTER.type,
-        counterCoin: COUNTER.coin
-      },
-      step: 'PREVIEW_SWAP'
+    props.swapActions.proceedToSwapConfirmation({
+      amount: formValues?.amount || '0',
+      base: BASE,
+      counter: COUNTER
     })
 
     props.analyticsActions.trackEvent({

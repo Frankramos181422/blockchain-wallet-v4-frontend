@@ -5,9 +5,11 @@ import { cancel, fork, take, takeEvery, takeLatest } from 'redux-saga/effects'
 import { trackAccountsSelected } from 'data/components/swap/sagas/trackAccountsSelected'
 
 import sagas from './sagas'
+import { proceedToSwapConfirmation } from './sagas/proceedToSwapConfirmation'
 import { actions } from './slice'
 
 let pollTask: Task
+let pollTaskPrice: Task
 
 export default ({ api, coreSagas, networks }) => {
   const swapSagas = sagas({ api, coreSagas, networks })
@@ -31,6 +33,7 @@ export default ({ api, coreSagas, networks }) => {
     yield takeLatest(actions.handleSwapMaxAmountClick.type, swapSagas.handleSwapMaxAmountClick)
     yield takeLatest(actions.handleSwapMinAmountClick.type, swapSagas.handleSwapMinAmountClick)
     yield takeLatest(actions.fetchCrossBorderLimits.type, swapSagas.fetchCrossBorderLimits)
+    yield takeLatest(actions.proceedToSwapConfirmation.type, proceedToSwapConfirmation)
     yield takeEvery(actions.setStep.type, trackAccountsSelected)
 
     // yield takeLatest(actions.startPollQuote.type, function* () {
@@ -43,10 +46,10 @@ export default ({ api, coreSagas, networks }) => {
     yield takeLatest(
       actions.startPollQuotePrice.type,
       function* (payload: ReturnType<typeof actions.startPollQuotePrice>) {
-        if (pollTask && pollTask.isRunning()) yield cancel(pollTask)
-        pollTask = yield fork(swapSagas.fetchQuotePrice, payload)
+        if (pollTaskPrice && pollTaskPrice.isRunning()) yield cancel(pollTaskPrice)
+        pollTaskPrice = yield fork(swapSagas.fetchQuotePrice, payload)
         yield take(actions.stopPollQuotePrice)
-        yield cancel(pollTask)
+        yield cancel(pollTaskPrice)
       }
     )
 

@@ -130,6 +130,10 @@ export default ({ api, coreSagas, networks }: { api: APIType; coreSagas; network
     yield put(actions.form.change('initSwap', 'BASE', payload.baseAccount))
     yield put(actions.form.change('initSwap', 'COUNTER', payload.counterAccount))
     yield put(A.setStep({ isSuggestedPair: true, step: 'ENTER_AMOUNT' }))
+
+    // stop ongoing polling and restart new
+    yield put(A.stopPollQuotePrice())
+    yield put(A.startPollQuotePrice({}))
   }
 
   const calculateProvisionalPayment = function* (
@@ -306,32 +310,23 @@ export default ({ api, coreSagas, networks }: { api: APIType; coreSagas; network
     while (true) {
       try {
         console.log('payload', payload)
-        const { amount } = payload
+        const { amount, counter, pair, paymentMethod, profile } = payload
         yield put(A.fetchQuoteLoading())
-        const initSwapFormValues = selectors.form.getFormValues('initSwap')(
-          yield select()
-        ) as InitSwapFormValuesType
-        if (!initSwapFormValues || !initSwapFormValues.BASE || !initSwapFormValues.COUNTER) {
-          return yield put(A.setStep({ step: 'INIT_SWAP' }))
-        }
-
-        const { BASE, COUNTER } = initSwapFormValues
-
-        const pair = getPair(BASE, COUNTER)
 
         const quote: ReturnType<typeof api.getSwapQuote> = yield call(
           api.getSwapQuote,
           pair,
-          QuoteProfileName.SWAP_INTERNAL,
-          amount, // fake
-          BSPaymentTypes.FUNDS
+          profile,
+          amount,
+          paymentMethod
         )
-        console.log('newQuote', quote)
+
+        console.log('newQuote ------  ', quote)
 
         yield put(
           A.fetchQuoteSuccess({
             quote,
-            rate: new BigNumber(convertBaseToStandard(COUNTER.coin, quote.price)).toNumber()
+            rate: new BigNumber(convertBaseToStandard(counter.coin, quote.price)).toNumber()
           })
         )
         const refresh = Math.abs(
@@ -505,6 +500,7 @@ export default ({ api, coreSagas, networks }: { api: APIType; coreSagas; network
       const { BASE } = initSwapFormValues
       if (BASE.type === SwapBaseCounterTypes.ACCOUNT) {
         // TODO figure out how this one should works
+        // https://www.notion.so/blockchaincom/ETH-Main-Address-API-88e73e63db32442e9f8ae6130605af1a
         // payment = yield call(
         //   calculateProvisionalPayment,
         //   BASE,
