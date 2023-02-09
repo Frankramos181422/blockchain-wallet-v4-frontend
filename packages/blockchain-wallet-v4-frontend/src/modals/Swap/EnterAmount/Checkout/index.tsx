@@ -23,13 +23,7 @@ import { media } from 'services/styles'
 import { AlertButton } from '../../../components'
 import { StyledForm } from '../../components'
 import { Props as OwnProps, SuccessStateType } from '..'
-import {
-  checkCrossBorderLimit,
-  getMaxMin,
-  incomingAmountNonZero,
-  maximumAmount,
-  minimumAmount
-} from './validation'
+import { checkCrossBorderLimit, getMaxMin, maximumAmount, minimumAmount } from './validation'
 
 export const Cell = styled.div<{ center?: boolean; size?: 'small' }>`
   display: flex;
@@ -264,7 +258,7 @@ const Checkout: React.FC<InjectedFormProps<{}, Props> & Props> = (props) => {
             data-e2e='swapAmountInput'
             name='amount'
             component={AmountTextBox}
-            validate={[maximumAmount, minimumAmount, incomingAmountNonZero, checkCrossBorderLimit]}
+            validate={[maximumAmount, minimumAmount, checkCrossBorderLimit]}
             normalize={normalizeAmount}
             props={{ disabled: balanceBelowMinimum }}
             // eslint-disable-next-line react/jsx-no-bind

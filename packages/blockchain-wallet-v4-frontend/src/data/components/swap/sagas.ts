@@ -176,7 +176,6 @@ export default ({ api, coreSagas, networks }: { api: APIType; coreSagas; network
     let toChain = false
 
     try {
-      console.log('create order now')
       yield put(actions.form.startSubmit('previewSwap'))
       const initSwapFormValues = selectors.form.getFormValues('initSwap')(
         yield select()
@@ -309,7 +308,6 @@ export default ({ api, coreSagas, networks }: { api: APIType; coreSagas; network
   const fetchQuote = function* ({ payload }: ReturnType<typeof A.startPollQuote>) {
     while (true) {
       try {
-        console.log('payload', payload)
         const { amount, counter, pair, paymentMethod, profile } = payload
         yield put(A.fetchQuoteLoading())
 
@@ -320,8 +318,6 @@ export default ({ api, coreSagas, networks }: { api: APIType; coreSagas; network
           amount,
           paymentMethod
         )
-
-        console.log('newQuote ------  ', quote)
 
         yield put(
           A.fetchQuoteSuccess({
@@ -373,7 +369,6 @@ export default ({ api, coreSagas, networks }: { api: APIType; coreSagas; network
           BSPaymentTypes.FUNDS,
           QuoteProfileName.SIMPLEBUY
         )
-        console.log('newQuote', quotePrice)
 
         yield put(A.fetchQuotePriceSuccess(quotePrice))
 
@@ -386,6 +381,7 @@ export default ({ api, coreSagas, networks }: { api: APIType; coreSagas; network
         // const refresh = Math.abs(
         //   differenceInMilliseconds(new Date(), new Date(quote.quoteExpiresAt))
         // )
+        // New endpoint do not return expiration date so we add fallback here
         yield delay(FALLBACK_DELAY)
       } catch (e) {
         const error = errorHandler(e)
@@ -432,8 +428,6 @@ export default ({ api, coreSagas, networks }: { api: APIType; coreSagas; network
       .getRatesSelector(BASE.coin, yield select())
       .getOrFail('Failed to get rates')
 
-    console.log('form has been changed', action.meta.field)
-
     const amountFieldValue =
       fix === 'CRYPTO'
         ? action.payload
@@ -449,10 +443,14 @@ export default ({ api, coreSagas, networks }: { api: APIType; coreSagas; network
       yield select()
     ) as SwapAmountFormValues
 
+    // TODO debounce this part it's when user enter new amount
     if (action.meta.field === 'amount' && swapAmountValues?.cryptoAmount) {
       yield put(A.stopPollQuotePrice())
 
-      const amount = convertStandardToBase(BASE.coin, swapAmountValues.cryptoAmount)
+      const amount = convertStandardToBase(
+        fix === 'CRYPTO' ? BASE.coin : 'FIAT',
+        swapAmountValues.cryptoAmount
+      )
 
       yield put(A.startPollQuotePrice({ amount }))
     }
@@ -641,8 +639,7 @@ export default ({ api, coreSagas, networks }: { api: APIType; coreSagas; network
     yield put(actions.form.clearFields('swapAmount', false, false, 'amount'))
     yield put(actions.form.change('swapAmount', 'cryptoAmount', 0))
 
-    console.log(' do not call init amount')
-    // yield put(A.initAmountForm())
+    yield put(A.initAmountForm())
   }
 
   const handleSwapMaxAmountClick = function* ({

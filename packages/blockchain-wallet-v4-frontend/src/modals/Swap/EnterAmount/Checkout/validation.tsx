@@ -44,18 +44,18 @@ export const getMaxMin = (
       // /trades/limits is returned in FIAT (3.5 USD)
       const fiatMin = convertBaseToStandard('FIAT', limits.minOrder)
       // convert 3.5 USD to BASE coin (0.01123091 ETH)
-      const baseMin = new BigNumber(fiatMin).dividedBy(baseRate.price).toNumber()
+      const baseMin = new BigNumber(fiatMin).dividedBy(baseRate.price)
 
-      // calculate the BTC -> ETH rate
-      // 1 BTC = 39.12444194 ETH
-      const exRate = new BigNumber(1).dividedBy(quotePrice?.price || 1)
-      // BTC fee is 0.0004517 BTC a.k.a 4517 satoshi
-      const standardCounterFee = convertBaseToStandard(COUNTER.coin, quotePrice?.networkFee || 0)
-      // 4517 satoshi is 0.017672510 ETH is 7 USD (AOTW)
-      const counterFeeInBase = exRate.times(standardCounterFee).toNumber()
+      // take network fee from quote price endpoint
+      const networkFee = new BigNumber(
+        convertBaseToStandard(COUNTER.coin, quotePrice?.networkFee || 0)
+      )
+
+      // add fee on top of baseMin
+      const baseMinAndFee = baseMin.plus(networkFee).toNumber()
 
       // We add 7 USD to 3.5 USD so worst case user receives 3.5 USD of BTC
-      return (counterFeeInBase + baseMin).toPrecision(CRYPTO_DECIMALS)
+      return baseMinAndFee.toPrecision(CRYPTO_DECIMALS)
     default:
       break
   }
@@ -120,11 +120,6 @@ export const maximumAmountSilver = (restProps: Props, amountError: string | bool
     limits.maxPossibleOrder < limits.maxOrder
   )
     return true
-}
-
-export const incomingAmountNonZero = (value, allValues, restProps: Props) => {
-  const { incomingAmount } = restProps
-  return incomingAmount
 }
 
 export const checkCrossBorderLimit = (
