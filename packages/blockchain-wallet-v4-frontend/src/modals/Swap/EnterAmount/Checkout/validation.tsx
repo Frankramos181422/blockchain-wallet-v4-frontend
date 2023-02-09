@@ -124,7 +124,7 @@ export const maximumAmountSilver = (restProps: Props, amountError: string | bool
 
 export const incomingAmountNonZero = (value, allValues, restProps: Props) => {
   const { incomingAmount } = restProps
-  return incomingAmount.isNegative ? 'NEGATIVE_INCOMING_AMT' : false
+  return incomingAmount
 }
 
 export const checkCrossBorderLimit = (

@@ -171,7 +171,7 @@ class PreviewSwap extends PureComponent<InjectedFormProps<{}, Props> & Props, St
         </FromToLogoLeft>
 
         {this.props.incomingAmountR.cata({
-          Failure: (e) => e,
+          Failure: (e) => <>{e}</>,
           Loading: () => (
             <Row>
               <SkeletonRectangle height='44px' width='400px' />
@@ -186,7 +186,7 @@ class PreviewSwap extends PureComponent<InjectedFormProps<{}, Props> & Props, St
             return (
               <FromToLogoLeft
                 accountType={COUNTER.type}
-                amount={value.amt}
+                amount={value}
                 base={false}
                 coinCode={COUNTER.coin}
                 label={COUNTER.label}

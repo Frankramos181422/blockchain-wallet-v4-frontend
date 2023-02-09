@@ -42,7 +42,7 @@ const getOrFail = function <A, EV>(this: RemoteDataType<any, A>, errorValue: EV)
 const map = function <E, A, T>(
   this: RemoteDataType<E, A>,
   f: (x: A) => T
-): RemoteSuccess<ReturnType<typeof f>> {
+): RemoteDataType<E, ReturnType<typeof f>> {
   return Remote.Success(f(this.data))
 }
 

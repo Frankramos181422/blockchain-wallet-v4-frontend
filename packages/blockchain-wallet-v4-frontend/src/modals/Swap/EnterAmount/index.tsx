@@ -230,9 +230,7 @@ class EnterAmount extends PureComponent<Props> {
                       <OptionValue>
                         <BalanceRow>
                           {val.formValues?.amount
-                            ? `${formatCoin(val.incomingAmount.amt)} ${
-                                counterCoinfig.displaySymbol
-                              }`
+                            ? `${formatCoin(val.incomingAmount)} ${counterCoinfig.displaySymbol}`
                             : `0 ${counterCoinfig.displaySymbol}`}
                         </BalanceRow>
                       </OptionValue>

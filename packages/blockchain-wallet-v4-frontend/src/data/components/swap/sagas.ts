@@ -41,7 +41,7 @@ import {
   SwapAmountFormValues,
   SwapBaseCounterTypes
 } from './types'
-import { getDirection, getPair, NO_QUOTE } from './utils'
+import { getDirection, getPair } from './utils'
 
 export default ({ api, coreSagas, networks }: { api: APIType; coreSagas; networks }) => {
   const { buildAndPublishPayment, paymentGetOrElse } = sendSagas({
@@ -449,10 +449,12 @@ export default ({ api, coreSagas, networks }: { api: APIType; coreSagas; network
       yield select()
     ) as SwapAmountFormValues
 
-    if (action.meta.field === 'amount') {
+    if (action.meta.field === 'amount' && swapAmountValues?.cryptoAmount) {
       yield put(A.stopPollQuotePrice())
 
-      yield put(A.startPollQuotePrice({ amount: swapAmountValues?.amount }))
+      const amount = convertStandardToBase(BASE.coin, swapAmountValues.cryptoAmount)
+
+      yield put(A.startPollQuotePrice({ amount }))
     }
 
     if (BASE.type === SwapBaseCounterTypes.CUSTODIAL) return

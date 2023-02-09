@@ -36,13 +36,6 @@ export default ({ api, coreSagas, networks }) => {
     yield takeLatest(actions.proceedToSwapConfirmation.type, proceedToSwapConfirmation)
     yield takeEvery(actions.setStep.type, trackAccountsSelected)
 
-    // yield takeLatest(actions.startPollQuote.type, function* () {
-    //   if (pollTask && pollTask.isRunning()) yield cancel(pollTask)
-    //   pollTask = yield fork(swapSagas.fetchQuote)
-    //   yield take(actions.stopPollQuote)
-    //   yield cancel(pollTask)
-    // })
-
     yield takeLatest(
       actions.startPollQuotePrice.type,
       function* (payload: ReturnType<typeof actions.startPollQuotePrice>) {
