@@ -349,7 +349,8 @@ export default ({ api, coreSagas, networks }: { api: APIType; coreSagas; network
   const fetchQuotePrice = function* ({ payload }: ReturnType<typeof A.startPollQuotePrice>) {
     while (true) {
       try {
-        const { amount = '0' } = payload
+        // initial amount is set to 10 due to BE limitations
+        const { amount = '10' } = payload
         yield put(A.fetchQuotePriceLoading())
         const initSwapFormValues = selectors.form.getFormValues('initSwap')(
           yield select()
